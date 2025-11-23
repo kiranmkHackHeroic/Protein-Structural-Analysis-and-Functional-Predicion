@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hemoglobin Alpha - Protein Structure Viewer</title>
+    <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        #viewer-container {
+            width: 100%;
+            height: 600px;
+            background: #f8f9fa;
+            position: relative;
+        }
+        
+        .viewer-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .btn:hover {
+            background: rgba(102, 126, 234, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .info-section {
+            margin-bottom: 25px;
+        }
+        
+        .info-section h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px 16px;
+            font-size: 0.95rem;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .info-value {
+            color: #333;
+        }
+        
+        .property-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .property-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        
+        .property-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .property-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: #28a745;
+            color: white;
+        }
+        
+        .status-badge.warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .secondary-structure {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .ss-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .ss-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .ss-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            margin-top: 30px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧬 Hemoglobin Alpha Chain Analysis</h1>
+            <p>UniProt ID: P69905 | PDB: 1A3N Chain A</p>
+        </header>
+        
+        <div class="main-grid">
+            <div class="card">
+                <div class="card-header">
+                    3D Structure Viewer
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div id="viewer-container">
+                        <div class="viewer-controls">
+                            <button class="btn" onclick="resetView()">Reset View</button>
+                            <button class="btn" onclick="toggleStyle()">Toggle Style</button>
+                            <button class="btn" onclick="toggleSpin()">Spin</button>
+                        </div>
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading 3D structure...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    Protein Information
+                </div>
+                <div class="card-body">
+                    <div class="info-section">
+                        <h3>Basic Properties</h3>
+                        <div class="info-grid">
+                            <span class="info-label">Length:</span>
+                            <span class="info-value" id="sequence-length">142 aa</span>
+                            
+                            <span class="info-label">MW:</span>
+                            <span class="info-value" id="molecular-weight">15,257 Da</span>
+                            
+                            <span class="info-label">pI:</span>
+                            <span class="info-value" id="isoelectric-point">8.72</span>
+                            
+                            <span class="info-label">Stability:</span>
+                            <span class="info-value">
+                                <span class="status-badge" id="stability-badge">Stable</span>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <h3>Biochemical Features</h3>
+                        <div class="property-card">
+                            <h4>Aromaticity</h4>
+                            <div class="property-value" id="aromaticity">0.077</div>
+                            <div class="property-label">Aromatic residue fraction</div>
+                        </div>
+                        
+                        <div class="property-card">
+                            <h4>Instability Index</h4>
+                            <div class="property-value" id="instability">6.97</div>
+                            <div class="property-label">&lt;40 indicates stable protein</div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <h3>Secondary Structure</h3>
+                        <div class="secondary-structure">
+                            <div class="ss-item">
+                                <div class="ss-label">α-Helix</div>
+                                <div class="ss-value" id="helix-frac">40.1%</div>
+                            </div>
+                            <div class="ss-item">
+                                <div class="ss-label">β-Sheet</div>
+                                <div class="ss-value" id="sheet-frac">26.1%</div>
+                            </div>
+                            <div class="ss-item">
+                                <div class="ss-label">Turn/Coil</div>
+                                <div class="ss-value" id="turn-frac">35.9%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Generated with BioPython | 3D visualization powered by 3Dmol.js</p>
+    </footer>
+    
+    <script>
+        let viewer;
+        let currentStyle = 'cartoon';
+        let isSpinning = false;
+        
+        // Initialize 3D viewer
+        function initViewer() {
+            const element = document.getElementById('viewer-container');
+            const config = { backgroundColor: 'white' };
+            viewer = $3Dmol.createViewer(element, config);
+            
+            // Load PDB structure
+            fetch('results/HBA_1A3N_chainA.pdb')
+                .then(response => response.text())
+                .then(data => {
+                    viewer.addModel(data, 'pdb');
+                    viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
+                    viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.7, color: 'white'}, {});
+                    viewer.zoomTo();
+                    viewer.render();
+                    
+                    // Remove loading message
+                    document.querySelector('.loading').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error loading PDB:', error);
+                    document.querySelector('.loading').innerHTML = 
+                        '<p style="color: red;">Error loading structure. Make sure the PDB file exists.</p>';
+                });
+        }
+        
+        function resetView() {
+            viewer.zoomTo();
+            viewer.render();
+        }
+        
+        function toggleStyle() {
+            viewer.setStyle({}, {});
+            
+            if (currentStyle === 'cartoon') {
+                viewer.setStyle({}, {stick: {colorscheme: 'chainHetatm'}});
+                currentStyle = 'stick';
+            } else if (currentStyle === 'stick') {
+                viewer.setStyle({}, {sphere: {colorscheme: 'chainHetatm', scale: 0.3}});
+                currentStyle = 'sphere';
+            } else {
+                viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
+                currentStyle = 'cartoon';
+            }
+            
+            viewer.render();
+        }
+        
+        function toggleSpin() {
+            if (isSpinning) {
+                viewer.spin(false);
+                isSpinning = false;
+            } else {
+                viewer.spin(true);
+                isSpinning = true;
+            }
+        }
+        
+        // Load analysis results from JSON
+        function loadAnalysisData() {
+            fetch('results/analysis_results.json')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sequence_length) {
+                        document.getElementById('sequence-length').textContent = data.sequence_length + ' aa';
+                    }
+                    if (data.molecular_weight) {
+                        document.getElementById('molecular-weight').textContent = 
+                            data.molecular_weight.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' Da';
+                    }
+                    if (data.isoelectric_point) {
+                        document.getElementById('isoelectric-point').textContent = 
+                            data.isoelectric_point.toFixed(2);
+                    }
+                    if (data.aromaticity) {
+                        document.getElementById('aromaticity').textContent = 
+                            data.aromaticity.toFixed(3);
+                    }
+                    if (data.instability_index) {
+                        const instability = data.instability_index;
+                        document.getElementById('instability').textContent = instability.toFixed(2);
+                        
+                        const badge = document.getElementById('stability-badge');
+                        if (instability < 40) {
+                            badge.textContent = 'Stable';
+                            badge.className = 'status-badge';
+                        } else {
+                            badge.textContent = 'Unstable';
+                            badge.className = 'status-badge warning';
+                        }
+                    }
+                    if (data.secondary_structure) {
+                        document.getElementById('helix-frac').textContent = 
+                            (data.secondary_structure.helix * 100).toFixed(1) + '%';
+                        document.getElementById('sheet-frac').textContent = 
+                            (data.secondary_structure.sheet * 100).toFixed(1) + '%';
+                        document.getElementById('turn-frac').textContent = 
+                            (data.secondary_structure.turn * 100).toFixed(1) + '%';
+                    }
+                })
+                .catch(error => {
+                    console.log('Analysis results not found, using default values');
+                });
+        }
+        
+        // Initialize on page load
+        window.onload = function() {
+            initViewer();
+            loadAnalysisData();
+        };
+    </script>
+</body>
+</html>

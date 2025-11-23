@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protein Structure Analyzer</title>
+    <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            padding: 40px 0;
+        }
+        
+        header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .search-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+        
+        .input-group {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn-analyze {
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 28px;
+            height: fit-content;
+        }
+        
+        .btn-analyze:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-analyze:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .examples {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        
+        .examples span {
+            color: #667eea;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 0 10px;
+        }
+        
+        .examples span:hover {
+            text-decoration: underline;
+        }
+        
+        #results {
+            display: none;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+        
+        @media (max-width: 1200px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        #viewer-container {
+            width: 100%;
+            height: 600px;
+            background: #f8f9fa;
+            position: relative;
+        }
+        
+        .viewer-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .btn:hover {
+            background: rgba(102, 126, 234, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .protein-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .protein-info h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .protein-info p {
+            color: #555;
+            margin: 5px 0;
+        }
+        
+        .stability-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 15px 0;
+        }
+        
+        .stability-badge.stable {
+            background: #28a745;
+            color: white;
+        }
+        
+        .stability-badge.unstable {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .info-section {
+            margin-bottom: 25px;
+        }
+        
+        .info-section h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px 16px;
+            font-size: 0.95rem;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .info-value {
+            color: #333;
+        }
+        
+        .secondary-structure {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .ss-item {
+            flex: 1;
+            text-align: center;
+            padding: 15px 10px;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .ss-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .ss-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .no-structure {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .no-structure h3 {
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .progress-text {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧬 Protein Structure Analyzer</h1>
+            <p>Enter a UniProt ID to analyze protein structure and stability</p>
+        </header>
+        
+        <div class="search-card">
+            <form class="search-form" onsubmit="analyzeProtein(event)">
+                <div class="input-group">
+                    <label for="uniprot-id">UniProt ID</label>
+                    <input 
+                        type="text" 
+                        id="uniprot-id" 
+                        placeholder="e.g., P69905"
+                        required
+                    >
+                </div>
+                <button type="submit" class="btn-analyze" id="analyze-btn">
+                    Analyze Protein
+                </button>
+            </form>
+            <div class="examples">
+                Try examples: 
+                <span onclick="loadExample('P69905')">P69905 (Hemoglobin)</span>
+                <span onclick="loadExample('P01308')">P01308 (Insulin)</span>
+                <span onclick="loadExample('P04637')">P04637 (p53)</span>
+            </div>
+        </div>
+        
+        <div id="loading" class="search-card loading" style="display: none;">
+            <div class="spinner"></div>
+            <p id="loading-text">Fetching protein data...</p>
+            <p class="progress-text" id="progress-text"></p>
+        </div>
+        
+        <div id="error" class="search-card" style="display: none;">
+            <div class="error" id="error-message"></div>
+        </div>
+        
+        <div id="results">
+            <div class="results-grid">
+                <div class="card">
+                    <div class="card-header">
+                        3D Structure Viewer
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div id="viewer-container">
+                            <div class="viewer-controls">
+                                <button class="btn" onclick="resetView()">Reset View</button>
+                                <button class="btn" onclick="toggleStyle()">Toggle Style</button>
+                                <button class="btn" onclick="toggleSpin()">Spin</button>
+                            </div>
+                            <div id="viewer-content"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        Analysis Results
+                    </div>
+                    <div class="card-body">
+                        <div class="protein-info">
+                            <h3 id="protein-name"></h3>
+                            <p id="protein-description"></p>
+                            <p><strong>UniProt ID:</strong> <span id="result-uniprot"></span></p>
+                        </div>
+                        
+                        <div class="info-section" id="function-section" style="display: none;">
+                            <h3>🧪 Protein Function & Role</h3>
+                            <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-top: 10px;">
+                                <p id="protein-function" style="color: #555; line-height: 1.6; margin-bottom: 8px;"></p>
+                                <div id="biological-process" style="margin-top: 8px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section" id="biological-role-section" style="display: none;">
+                            <h3>🧬 Biological Role in the Organism</h3>
+                            <div id="biological-role-content" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 5px solid #1976d2;">
+                            </div>
+                        </div>
+                        
+                        <div class="info-section" id="applications-section" style="display: none;">
+                            <h3>💡 Applications & Uses</h3>
+                            <div id="applications-list" style="background: #fff3cd; padding: 12px; border-radius: 6px; margin-top: 10px;">
+                            </div>
+                        </div>
+                        
+                        <div class="info-section" id="real-world-impact" style="display: none;">
+                            <h3>🌍 Real-World Impact: How Structure Solves Problems</h3>
+                            <div id="impact-content" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 5px solid #4caf50;">
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3>Stability Assessment</h3>
+                            <div style="text-align: center;">
+                                <div class="stability-badge" id="stability-badge"></div>
+                                <p style="margin-top: 10px; color: #666;">
+                                    Instability Index: <strong id="instability-value"></strong>
+                                </p>
+                                <p style="font-size: 0.85rem; color: #999; margin-top: 5px;">
+                                    (Values &lt; 40 indicate stable proteins)
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3>Basic Properties</h3>
+                            <div class="info-grid">
+                                <span class="info-label">Length:</span>
+                                <span class="info-value" id="sequence-length"></span>
+                                
+                                <span class="info-label">Molecular Weight:</span>
+                                <span class="info-value" id="molecular-weight"></span>
+                                
+                                <span class="info-label">Isoelectric Point:</span>
+                                <span class="info-value" id="isoelectric-point"></span>
+                                
+                                <span class="info-label">Aromaticity:</span>
+                                <span class="info-value" id="aromaticity"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3>Secondary Structure</h3>
+                            <div class="secondary-structure">
+                                <div class="ss-item">
+                                    <div class="ss-label">α-Helix</div>
+                                    <div class="ss-value" id="helix-frac"></div>
+                                </div>
+                                <div class="ss-item">
+                                    <div class="ss-label">β-Sheet</div>
+                                    <div class="ss-value" id="sheet-frac"></div>
+                                </div>
+                                <div class="ss-item">
+                                    <div class="ss-label">Turn/Coil</div>
+                                    <div class="ss-value" id="turn-frac"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="pdb-info" style="margin-top: 15px; padding: 15px; background: #e7f3ff; border-radius: 8px; font-size: 0.9rem; display: none;">
+                            <h4 style="color: #667eea; margin-bottom: 10px; font-size: 1rem;">Structure Quality Metrics</h4>
+                            <div class="info-grid" style="margin-top: 10px;">
+                                <span class="info-label">PDB ID:</span>
+                                <span class="info-value" id="pdb-id"></span>
+                                
+                                <span class="info-label">Method:</span>
+                                <span class="info-value" id="exp-method"></span>
+                                
+                                <span class="info-label">Resolution:</span>
+                                <span class="info-value" id="resolution"></span>
+                                
+                                <span class="info-label">R-factor:</span>
+                                <span class="info-value" id="r-factor"></span>
+                                
+                                <span class="info-label">Quality:</span>
+                                <span class="info-value" id="quality-badge"></span>
+                            </div>
+                            <p style="margin-top: 10px; font-size: 0.85rem; color: #666;">
+                                <strong>Verification:</strong> <span id="verification-status"></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let viewer;
+        let currentStyle = 'cartoon';
+        let isSpinning = false;
+        
+        function loadExample(uniprotId) {
+            document.getElementById('uniprot-id').value = uniprotId;
+        }
+        
+        function updateProgress(text) {
+            document.getElementById('progress-text').textContent = text;
+        }
+        
+        async function analyzeProtein(event) {
+            event.preventDefault();
+            
+            const uniprotId = document.getElementById('uniprot-id').value.trim().toUpperCase();
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('analyze-btn').disabled = true;
+            
+            try {
+                updateProgress('Fetching sequence from UniProt...');
+                
+                // Fetch from UniProt REST API
+                const uniprotUrl = `https://rest.uniprot.org/uniprotkb/${uniprotId}.json`;
+                const uniprotResp = await fetch(uniprotUrl);
+                
+                if (!uniprotResp.ok) {
+                    throw new Error('Invalid UniProt ID or protein not found');
+                }
+                
+                const uniprotData = await uniprotResp.json();
+                const sequence = uniprotData.sequence.value;
+                const proteinName = uniprotData.proteinDescription?.recommendedName?.fullName?.value || 'Unknown';
+                const organism = uniprotData.organism?.scientificName || 'Unknown';
+                
+                // Extract function and comments
+                const proteinFunction = uniprotData.comments?.find(c => c.commentType === 'FUNCTION')?.texts?.[0]?.value || null;
+                const biologicalProcess = uniprotData.comments?.filter(c => c.commentType === 'PATHWAY' || c.commentType === 'SUBUNIT') || [];
+                const keywords = uniprotData.keywords?.map(k => k.name) || [];
+                
+                updateProgress('Analyzing biochemical properties...');
+                
+                // Calculate properties locally
+                const analysis = analyzeSequence(sequence);
+                
+                updateProgress('Fetching 3D structure...');
+                
+                // Try to get PDB structure
+                let pdbStructure = null;
+                let pdbId = null;
+                
+                const pdbRefs = uniprotData.uniProtKBCrossReferences?.filter(ref => ref.database === 'PDB') || [];
+                
+                if (pdbRefs.length > 0) {
+                    pdbId = pdbRefs[0].id;
+                    try {
+                        const pdbUrl = `https://files.rcsb.org/download/${pdbId}.pdb`;
+                        const pdbResp = await fetch(pdbUrl);
+                        if (pdbResp.ok) {
+                            pdbStructure = await pdbResp.text();
+                        }
+                        
+                        // Fetch PDB metadata for quality metrics
+                        updateProgress('Validating structure quality...');
+                        const metadataUrl = `https://data.rcsb.org/rest/v1/core/entry/${pdbId}`;
+                        const metadataResp = await fetch(metadataUrl);
+                        if (metadataResp.ok) {
+                            var pdbMetadata = await metadataResp.json();
+                        }
+                    } catch (e) {
+                        console.log('Could not fetch PDB structure:', e);
+                    }
+                }
+                
+                displayResults({
+                    uniprot_id: uniprotId,
+                    protein_name: proteinName,
+                    organism: organism,
+                    sequence: sequence,
+                    analysis: analysis,
+                    pdb_structure: pdbStructure,
+                    pdb_id: pdbId,
+                    pdb_metadata: pdbMetadata || null,
+                    protein_function: proteinFunction,
+                    biological_process: biologicalProcess,
+                    keywords: keywords
+                });
+                
+            } catch (error) {
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error-message').textContent = error.message;
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('analyze-btn').disabled = false;
+            }
+        }
+        
+        function analyzeSequence(sequence) {
+            const length = sequence.length;
+            
+            // Calculate molecular weight
+            const aaWeights = {
+                'A': 89, 'R': 174, 'N': 132, 'D': 133, 'C': 121,
+                'E': 147, 'Q': 146, 'G': 75, 'H': 155, 'I': 131,
+                'L': 131, 'K': 146, 'M': 149, 'F': 165, 'P': 115,
+                'S': 105, 'T': 119, 'W': 204, 'Y': 181, 'V': 117
+            };
+            
+            let mw = 0;
+            for (let aa of sequence) {
+                mw += aaWeights[aa] || 110;
+            }
+            
+            // Calculate aromaticity (F, W, Y)
+            const aromatic = (sequence.match(/[FWY]/g) || []).length;
+            const aromaticity = aromatic / length;
+            
+            // Instability Index using DIWV (Dipeptide Instability Weight Values)
+            // Based on Guruprasad et al. (1990)
+            const DIWV = {
+                'AA': 1.0, 'AC': 44.94, 'AD': 7.49, 'AE': 1.0, 'AF': 1.0, 'AG': 1.0, 'AH': 1.0, 'AI': 1.0, 'AK': 1.0, 'AL': 1.0, 'AM': 1.0, 'AN': 1.0, 'AP': 20.26, 'AQ': 1.0, 'AR': 1.0, 'AS': 1.0, 'AT': 1.0, 'AV': 1.0, 'AW': 1.0, 'AY': 1.0,
+                'CA': 1.0, 'CC': 1.0, 'CD': 20.26, 'CE': 1.0, 'CF': 1.0, 'CG': 1.0, 'CH': 33.6, 'CI': 1.0, 'CK': 1.0, 'CL': 20.26, 'CM': 33.6, 'CN': 1.0, 'CP': 20.26, 'CQ': 1.0, 'CR': 1.0, 'CS': 1.0, 'CT': 33.6, 'CV': 1.0, 'CW': 24.68, 'CY': 1.0,
+                'DA': 1.0, 'DC': 1.0, 'DD': 1.0, 'DE': 1.0, 'DF': 1.0, 'DG': 1.0, 'DH': 1.0, 'DI': 1.0, 'DK': 1.0, 'DL': 1.0, 'DM': 1.0, 'DN': 1.0, 'DP': 1.0, 'DQ': 1.0, 'DR': 1.0, 'DS': 20.26, 'DT': 1.0, 'DV': 1.0, 'DW': 1.0, 'DY': 1.0,
+                'EA': 1.0, 'EC': 44.94, 'ED': 1.0, 'EE': 33.6, 'EF': 1.0, 'EG': 1.0, 'EH': 1.0, 'EI': 20.26, 'EK': 1.0, 'EL': 1.0, 'EM': 1.0, 'EN': 1.0, 'EP': 20.26, 'EQ': 20.26, 'ER': 1.0, 'ES': 20.26, 'ET': 1.0, 'EV': 1.0, 'EW': 1.0, 'EY': 1.0,
+                'FA': 1.0, 'FC': 1.0, 'FD': 13.34, 'FE': 1.0, 'FF': 1.0, 'FG': 1.0, 'FH': 1.0, 'FI': 1.0, 'FK': 1.0, 'FL': 1.0, 'FM': 1.0, 'FN': 1.0, 'FP': 20.26, 'FQ': 1.0, 'FR': 1.0, 'FS': 1.0, 'FT': 1.0, 'FV': 1.0, 'FW': 1.0, 'FY': 33.6,
+                'GA': 1.0, 'GC': 1.0, 'GD': 1.0, 'GE': 1.0, 'GF': 1.0, 'GG': 13.34, 'GH': 1.0, 'GI': 1.0, 'GK': 1.0, 'GL': 1.0, 'GM': 1.0, 'GN': 1.0, 'GP': 1.0, 'GQ': 1.0, 'GR': 1.0, 'GS': 1.0, 'GT': 1.0, 'GV': 1.0, 'GW': 13.34, 'GY': 1.0,
+                'HA': 1.0, 'HC': 1.0, 'HD': 1.0, 'HE': 1.0, 'HF': 1.0, 'HG': 1.0, 'HH': 1.0, 'HI': 44.94, 'HK': 24.68, 'HL': 1.0, 'HM': 1.0, 'HN': 24.68, 'HP': 1.0, 'HQ': 1.0, 'HR': 1.0, 'HS': 1.0, 'HT': 1.0, 'HV': 1.0, 'HW': 24.68, 'HY': 44.94,
+                'IA': 1.0, 'IC': 1.0, 'ID': 1.0, 'IE': 44.94, 'IF': 1.0, 'IG': 1.0, 'IH': 13.34, 'II': 1.0, 'IK': 1.0, 'IL': 20.26, 'IM': 1.0, 'IN': 1.0, 'IP': 1.0, 'IQ': 1.0, 'IR': 1.0, 'IS': 1.0, 'IT': 1.0, 'IV': 1.0, 'IW': 1.0, 'IY': 1.0,
+                'KA': 1.0, 'KC': 1.0, 'KD': 1.0, 'KE': 1.0, 'KF': 1.0, 'KG': 1.0, 'KH': 1.0, 'KI': 1.0, 'KK': 1.0, 'KL': 24.68, 'KM': 33.6, 'KN': 1.0, 'KP': 1.0, 'KQ': 24.68, 'KR': 33.6, 'KS': 1.0, 'KT': 1.0, 'KV': 1.0, 'KW': 1.0, 'KY': 1.0,
+                'LA': 1.0, 'LC': 1.0, 'LD': 1.0, 'LE': 1.0, 'LF': 1.0, 'LG': 1.0, 'LH': 1.0, 'LI': 1.0, 'LK': 1.0, 'LL': 1.0, 'LM': 1.0, 'LN': 1.0, 'LP': 20.26, 'LQ': 33.6, 'LR': 20.26, 'LS': 1.0, 'LT': 1.0, 'LV': 1.0, 'LW': 24.68, 'LY': 1.0,
+                'MA': 13.34, 'MC': 1.0, 'MD': 1.0, 'ME': 1.0, 'MF': 1.0, 'MG': 1.0, 'MH': 58.28, 'MI': 1.0, 'MK': 1.0, 'ML': 1.0, 'MM': 1.0, 'MN': 1.0, 'MP': 44.94, 'MQ': 1.0, 'MR': 1.0, 'MS': 44.94, 'MT': 1.0, 'MV': 1.0, 'MW': 1.0, 'MY': 24.68,
+                'NA': 1.0, 'NC': 1.0, 'ND': 1.0, 'NE': 1.0, 'NF': 1.0, 'NG': 1.0, 'NH': 1.0, 'NI': 44.94, 'NK': 24.68, 'NL': 1.0, 'NM': 1.0, 'NN': 1.0, 'NP': 1.0, 'NQ': 1.0, 'NR': 1.0, 'NS': 1.0, 'NT': 1.0, 'NV': 1.0, 'NW': 1.0, 'NY': 1.0,
+                'PA': 20.26, 'PC': 1.0, 'PD': 1.0, 'PE': 18.38, 'PF': 20.26, 'PG': 1.0, 'PH': 1.0, 'PI': 1.0, 'PK': 1.0, 'PL': 1.0, 'PM': 20.26, 'PN': 1.0, 'PP': 20.26, 'PQ': 20.26, 'PR': 1.0, 'PS': 20.26, 'PT': 1.0, 'PV': 20.26, 'PW': 1.0, 'PY': 1.0,
+                'QA': 1.0, 'QC': 1.0, 'QD': 20.26, 'QE': 20.26, 'QF': 1.0, 'QG': 1.0, 'QH': 1.0, 'QI': 1.0, 'QK': 1.0, 'QL': 1.0, 'QM': 1.0, 'QN': 1.0, 'QP': 20.26, 'QQ': 20.26, 'QR': 1.0, 'QS': 44.94, 'QT': 1.0, 'QV': 1.0, 'QW': 1.0, 'QY': 1.0,
+                'RA': 1.0, 'RC': 1.0, 'RD': 1.0, 'RE': 1.0, 'RF': 1.0, 'RG': 1.0, 'RH': 20.26, 'RI': 1.0, 'RK': 1.0, 'RL': 1.0, 'RM': 1.0, 'RN': 13.34, 'RP': 20.26, 'RQ': 20.26, 'RR': 58.28, 'RS': 44.94, 'RT': 1.0, 'RV': 1.0, 'RW': 58.28, 'RY': 1.0,
+                'SA': 1.0, 'SC': 33.6, 'SD': 1.0, 'SE': 20.26, 'SF': 1.0, 'SG': 1.0, 'SH': 1.0, 'SI': 1.0, 'SK': 1.0, 'SL': 1.0, 'SM': 1.0, 'SN': 1.0, 'SP': 44.94, 'SQ': 20.26, 'SR': 20.26, 'SS': 20.26, 'ST': 1.0, 'SV': 1.0, 'SW': 1.0, 'SY': 1.0,
+                'TA': 1.0, 'TC': 1.0, 'TD': 1.0, 'TE': 20.26, 'TF': 13.34, 'TG': 1.0, 'TH': 1.0, 'TI': 1.0, 'TK': 1.0, 'TL': 1.0, 'TM': 1.0, 'TN': 1.0, 'TP': 1.0, 'TQ': 1.0, 'TR': 1.0, 'TS': 1.0, 'TT': 1.0, 'TV': 1.0, 'TW': 13.34, 'TY': 1.0,
+                'VA': 1.0, 'VC': 1.0, 'VD': 1.0, 'VE': 1.0, 'VF': 1.0, 'VG': 1.0, 'VH': 1.0, 'VI': 1.0, 'VK': 1.0, 'VL': 1.0, 'VM': 1.0, 'VN': 1.0, 'VP': 20.26, 'VQ': 1.0, 'VR': 1.0, 'VS': 1.0, 'VT': 1.0, 'VV': 1.0, 'VW': 1.0, 'VY': 1.0,
+                'WA': 1.0, 'WC': 1.0, 'WD': 1.0, 'WE': 1.0, 'WF': 1.0, 'WG': 13.34, 'WH': 24.68, 'WI': 1.0, 'WK': 1.0, 'WL': 13.34, 'WM': 24.68, 'WN': 13.34, 'WP': 1.0, 'WQ': 1.0, 'WR': 1.0, 'WS': 1.0, 'WT': 1.0, 'WV': 1.0, 'WW': 1.0, 'WY': 1.0,
+                'YA': 24.68, 'YC': 1.0, 'YD': 24.68, 'YE': 1.0, 'YF': 1.0, 'YG': 1.0, 'YH': 13.34, 'YI': 1.0, 'YK': 1.0, 'YL': 1.0, 'YM': 44.94, 'YN': 1.0, 'YP': 13.34, 'YQ': 1.0, 'YR': 1.0, 'YS': 1.0, 'YT': 1.0, 'YV': 1.0, 'YW': 1.0, 'YY': 13.34
+            };
+            
+            let instability = 0;
+            for (let i = 0; i < length - 1; i++) {
+                const pair = sequence[i] + sequence[i + 1];
+                const value = DIWV[pair] || 1.0;
+                instability += value;
+            }
+            instability = (instability * 10) / length;
+            
+            // Simple pI estimation (very rough)
+            const positive = (sequence.match(/[RKH]/g) || []).length;
+            const negative = (sequence.match(/[DE]/g) || []).length;
+            const pI = 7 + (positive - negative) / length * 5;
+            
+            // Secondary structure prediction (very simplified)
+            // Just based on propensities
+            const helixAA = (sequence.match(/[AELM]/g) || []).length / length;
+            const sheetAA = (sequence.match(/[VIY]/g) || []).length / length;
+            const turnAA = 1 - helixAA - sheetAA;
+            
+            return {
+                sequence_length: length,
+                molecular_weight: Math.round(mw),
+                isoelectric_point: Math.round(pI * 100) / 100,
+                aromaticity: Math.round(aromaticity * 10000) / 10000,
+                instability_index: Math.round(instability * 100) / 100,
+                stability: instability < 40 ? "Stable" : "Unstable",
+                secondary_structure: {
+                    helix: Math.round(helixAA * 1000) / 10,
+                    sheet: Math.round(sheetAA * 1000) / 10,
+                    turn: Math.round(turnAA * 1000) / 10
+                }
+            };
+        }
+        
+        function displayResults(data) {
+            // Show results section
+            document.getElementById('results').style.display = 'block';
+            
+            // Protein info
+            document.getElementById('protein-name').textContent = data.protein_name;
+            document.getElementById('protein-description').textContent = data.organism;
+            document.getElementById('result-uniprot').textContent = data.uniprot_id;
+            
+            // Stability
+            const stability = data.analysis.stability;
+            const stabilityBadge = document.getElementById('stability-badge');
+            stabilityBadge.textContent = stability.toUpperCase();
+            stabilityBadge.className = 'stability-badge ' + stability.toLowerCase();
+            document.getElementById('instability-value').textContent = data.analysis.instability_index;
+            
+            // Basic properties
+            document.getElementById('sequence-length').textContent = data.analysis.sequence_length + ' amino acids';
+            document.getElementById('molecular-weight').textContent = data.analysis.molecular_weight.toLocaleString() + ' Da';
+            document.getElementById('isoelectric-point').textContent = data.analysis.isoelectric_point;
+            document.getElementById('aromaticity').textContent = data.analysis.aromaticity;
+            
+            // Secondary structure
+            document.getElementById('helix-frac').textContent = data.analysis.secondary_structure.helix + '%';
+            document.getElementById('sheet-frac').textContent = data.analysis.secondary_structure.sheet + '%';
+            document.getElementById('turn-frac').textContent = data.analysis.secondary_structure.turn + '%';
+            
+            // Display protein function
+            if (data.protein_function) {
+                document.getElementById('function-section').style.display = 'block';
+                document.getElementById('protein-function').textContent = data.protein_function;
+                
+                // Display biological process/pathway info
+                if (data.biological_process && data.biological_process.length > 0) {
+                    let bioHtml = '<div style="margin-top: 8px;"><strong style="color: #667eea;">Biological Context:</strong><ul style="margin: 5px 0 0 20px; color: #666;">';
+                    data.biological_process.forEach(comment => {
+                        if (comment.texts && comment.texts[0]) {
+                            bioHtml += `<li style="margin: 3px 0;">${comment.texts[0].value}</li>`;
+                        }
+                    });
+                    bioHtml += '</ul></div>';
+                    document.getElementById('biological-process').innerHTML = bioHtml;
+                }
+            }
+            
+            // Display applications based on keywords and function
+            if (data.keywords && data.keywords.length > 0) {
+                document.getElementById('applications-section').style.display = 'block';
+                const applications = generateApplications(data.keywords, data.protein_function, data.protein_name);
+                document.getElementById('applications-list').innerHTML = applications;
+                
+                // Generate biological role
+                document.getElementById('biological-role-section').style.display = 'block';
+                const bioRole = generateBiologicalRole(data.keywords, data.protein_function, data.protein_name, data.organism, data.analysis);
+                document.getElementById('biological-role-content').innerHTML = bioRole;
+                
+                // Generate real-world impact
+                document.getElementById('real-world-impact').style.display = 'block';
+                const impact = generateRealWorldImpact(data.keywords, data.protein_function, data.protein_name, data.analysis);
+                document.getElementById('impact-content').innerHTML = impact;
+            }
+            
+            // 3D Structure
+            const viewerContent = document.getElementById('viewer-content');
+            
+            if (data.pdb_structure) {
+                viewerContent.innerHTML = '';
+                document.getElementById('pdb-id').textContent = data.pdb_id;
+                document.getElementById('pdb-info').style.display = 'block';
+                
+                // Display structure quality metrics
+                if (data.pdb_metadata) {
+                    const metadata = data.pdb_metadata;
+                    
+                    // Experimental method
+                    const method = metadata.exptl?.[0]?.method || 'Unknown';
+                    document.getElementById('exp-method').textContent = method;
+                    
+                    // Resolution
+                    let resolution = 'N/A';
+                    let resolutionValue = null;
+                    if (metadata.rcsb_entry_info?.resolution_combined) {
+                        resolutionValue = metadata.rcsb_entry_info.resolution_combined[0];
+                        resolution = resolutionValue.toFixed(2) + ' Å';
+                    }
+                    document.getElementById('resolution').textContent = resolution;
+                    
+                    // R-factor (for X-ray structures)
+                    let rFactor = 'N/A';
+                    if (metadata.refine?.[0]?.ls_r_factor_r_free) {
+                        rFactor = metadata.refine[0].ls_r_factor_r_free.toFixed(3);
+                    } else if (metadata.refine?.[0]?.ls_r_factor_r_work) {
+                        rFactor = metadata.refine[0].ls_r_factor_r_work.toFixed(3);
+                    }
+                    document.getElementById('r-factor').textContent = rFactor;
+                    
+                    // Quality assessment
+                    let quality = 'Unknown';
+                    let qualityColor = '#999';
+                    let verification = '';
+                    
+                    if (method.includes('X-RAY') && resolutionValue) {
+                        if (resolutionValue <= 2.0) {
+                            quality = '🟢 High Quality';
+                            qualityColor = '#28a745';
+                            verification = 'Excellent resolution. Structure is highly reliable for detailed analysis.';
+                        } else if (resolutionValue <= 3.0) {
+                            quality = '🟡 Good Quality';
+                            qualityColor = '#ffc107';
+                            verification = 'Good resolution. Structure is reliable for most analyses.';
+                        } else {
+                            quality = '🟠 Moderate Quality';
+                            qualityColor = '#ff9800';
+                            verification = 'Moderate resolution. Use with caution for detailed interactions.';
+                        }
+                        
+                        // Check R-factor if available
+                        if (rFactor !== 'N/A') {
+                            const rValue = parseFloat(rFactor);
+                            if (rValue > 0.3) {
+                                quality = '🔴 Poor Quality';
+                                qualityColor = '#dc3545';
+                                verification = 'High R-factor indicates potential refinement issues. Use with caution.';
+                            }
+                        }
+                    } else if (method.includes('NMR')) {
+                        quality = '🟢 NMR Structure';
+                        qualityColor = '#17a2b8';
+                        verification = 'NMR structure provides dynamic information. Ensemble of conformations.';
+                    } else if (method.includes('ELECTRON MICROSCOPY')) {
+                        if (resolutionValue && resolutionValue <= 4.0) {
+                            quality = '🟢 High Quality EM';
+                            qualityColor = '#28a745';
+                            verification = 'Good cryo-EM resolution. Structure is reliable.';
+                        } else {
+                            quality = '🟡 Moderate EM';
+                            qualityColor = '#ffc107';
+                            verification = 'Cryo-EM structure. Check resolution for detailed analysis.';
+                        }
+                    }
+                    
+                    const qualityBadge = document.getElementById('quality-badge');
+                    qualityBadge.textContent = quality;
+                    qualityBadge.style.color = qualityColor;
+                    qualityBadge.style.fontWeight = 'bold';
+                    
+                    document.getElementById('verification-status').textContent = verification;
+                } else {
+                    document.getElementById('exp-method').textContent = 'Unknown';
+                    document.getElementById('resolution').textContent = 'N/A';
+                    document.getElementById('r-factor').textContent = 'N/A';
+                    document.getElementById('quality-badge').textContent = 'Metadata unavailable';
+                    document.getElementById('verification-status').textContent = 'Could not fetch quality metrics.';
+                }
+                
+                initViewer(data.pdb_structure);
+            } else {
+                viewerContent.innerHTML = `
+                    <div class="no-structure">
+                        <h3>⚠️ No 3D Structure Available</h3>
+                        <p>No PDB structure found for this protein</p>
+                    </div>
+                `;
+                document.getElementById('pdb-info').style.display = 'none';
+            }
+            
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function generateApplications(keywords, proteinFunction, proteinName) {
+            const applications = [];
+            const keywordStr = keywords.join(' ').toLowerCase();
+            const functionStr = (proteinFunction || '').toLowerCase();
+            const nameStr = proteinName.toLowerCase();
+            
+            // Medical/Therapeutic applications
+            if (keywordStr.includes('disease') || keywordStr.includes('cancer') || functionStr.includes('tumor') || nameStr.includes('p53')) {
+                applications.push({
+                    icon: '🏥',
+                    title: 'Medical Research',
+                    desc: 'Drug target for therapeutic interventions, disease biomarker studies, and diagnostic applications.'
+                });
+            }
+            
+            if (keywordStr.includes('enzyme') || functionStr.includes('catalyze') || functionStr.includes('hydrolyze')) {
+                applications.push({
+                    icon: '🧬',
+                    title: 'Biotechnology',
+                    desc: 'Industrial biocatalysis, biosensor development, and molecular engineering applications.'
+                });
+            }
+            
+            if (keywordStr.includes('antibody') || keywordStr.includes('immune') || functionStr.includes('antigen')) {
+                applications.push({
+                    icon: '💉',
+                    title: 'Immunotherapy',
+                    desc: 'Vaccine development, antibody therapeutics, and immune system modulation.'
+                });
+            }
+            
+            if (keywordStr.includes('receptor') || keywordStr.includes('signaling') || functionStr.includes('signal')) {
+                applications.push({
+                    icon: '📡',
+                    title: 'Drug Discovery',
+                    desc: 'Target for small molecule drugs, receptor pharmacology, and signal pathway modulation.'
+                });
+            }
+            
+            if (keywordStr.includes('transport') || functionStr.includes('transport') || nameStr.includes('hemoglobin') || nameStr.includes('myoglobin')) {
+                applications.push({
+                    icon: '🚚',
+                    title: 'Molecular Transport',
+                    desc: 'Delivery systems, oxygen therapy, blood substitutes, and transport mechanism studies.'
+                });
+            }
+            
+            if (keywordStr.includes('structural protein') || keywordStr.includes('cytoskeleton') || nameStr.includes('collagen') || nameStr.includes('actin')) {
+                applications.push({
+                    icon: '🏗️',
+                    title: 'Biomaterials',
+                    desc: 'Tissue engineering, scaffold materials, and structural biomaterial development.'
+                });
+            }
+            
+            if (keywordStr.includes('metaboli') || functionStr.includes('metaboli') || keywordStr.includes('glycolysis')) {
+                applications.push({
+                    icon: '⚡',
+                    title: 'Metabolic Engineering',
+                    desc: 'Pathway optimization, metabolite production, and biofuel/biochemical synthesis.'
+                });
+            }
+            
+            if (keywordStr.includes('hormone') || keywordStr.includes('insulin') || functionStr.includes('regulates')) {
+                applications.push({
+                    icon: '⚖️',
+                    title: 'Endocrine Research',
+                    desc: 'Hormone replacement therapy, diabetes treatment, and metabolic disorder studies.'
+                });
+            }
+            
+            // Generic research applications
+            if (applications.length === 0) {
+                applications.push({
+                    icon: '🔬',
+                    title: 'Basic Research',
+                    desc: 'Protein structure studies, molecular biology research, and fundamental biochemistry.'
+                });
+                applications.push({
+                    icon: '🧪',
+                    title: 'Protein Engineering',
+                    desc: 'Mutagenesis studies, protein stability optimization, and function modification.'
+                });
+            }
+            
+            // Always add structural biology
+            applications.push({
+                icon: '📊',
+                title: 'Structural Biology',
+                desc: 'X-ray crystallography, NMR studies, cryo-EM analysis, and structure-function relationships.'
+            });
+            
+            let html = '<ul style="list-style: none; padding: 0; margin: 0;">';
+            applications.forEach(app => {
+                html += `
+                    <li style="margin: 10px 0; padding: 10px; background: white; border-radius: 6px; border-left: 4px solid #667eea;">
+                        <strong style="color: #667eea;">${app.icon} ${app.title}</strong>
+                        <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">${app.desc}</p>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+            
+            return html;
+        }
+        
+        function generateBiologicalRole(keywords, proteinFunction, proteinName, organism, analysis) {
+            const keywordStr = keywords.join(' ').toLowerCase();
+            const functionStr = (proteinFunction || '').toLowerCase();
+            const nameStr = proteinName.toLowerCase();
+            let html = '';
+            
+            // p53 - Tumor Suppressor
+            if (nameStr.includes('p53') || nameStr.includes('tumor suppressor')) {
+                html = `
+                    <h4 style="color: #1565c0; margin-bottom: 10px;">Guardian of the Genome</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px;">
+                        <p style="color: #555; line-height: 1.7;"><strong>What it Does:</strong> p53 is the "master switch" that prevents cancer. It:</p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.8; margin-top: 8px;">
+                            <li><strong>Detects DNA damage</strong> - Senses when mutations occur</li>
+                            <li><strong>Pauses cell division</strong> - Stops damaged cells from copying</li>
+                            <li><strong>Triggers repair</strong> - Activates DNA fix mechanisms</li>
+                            <li><strong>Enforces apoptosis</strong> - Kills irreparably damaged cells before they become cancer</li>
+                            <li><strong>Maintains genome stability</strong> - Prevents mutations from accumulating</li>
+                        </ul>
+                        <p style="color: #555; line-height: 1.7; margin-top: 10px;"><strong>Where it Works:</strong> Every cell nucleus in ${organism || 'your body'}. When p53 is working, cancer can't start.</p>
+                        <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #e65100;">⚠️ When It Fails:</strong> If p53 is mutated, cells with DNA damage survive and multiply → cancer develops. This is why 50% of human cancers involve p53 mutations.
+                        </div>
+                    </div>
+                `;
+            }
+            // Insulin - Hormone
+            else if (nameStr.includes('insulin')) {
+                html = `
+                    <h4 style="color: #1565c0; margin-bottom: 10px;">Master Glucose Controller</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px;">
+                        <p style="color: #555; line-height: 1.7;"><strong>What it Does:</strong> Insulin is the hormone that controls blood sugar levels:</p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.8; margin-top: 8px;">
+                            <li><strong>Signals the fed state</strong> - Released when you eat, tells your body "glucose is available"</li>
+                            <li><strong>Opens glucose gates</strong> - Cells take up glucose from blood for energy</li>
+                            <li><strong>Activates storage</strong> - Muscles store glucose as glycogen, fat cells store as triglycerides</li>
+                            <li><strong>Enables growth</strong> - Activates protein synthesis in muscles and organs</li>
+                            <li><strong>Regulates metabolism</strong> - Controls whether body burns fat or carbs</li>
+                        </ul>
+                        <p style="color: #555; line-height: 1.7; margin-top: 10px;"><strong>Where it Works:</strong> Secreted by pancreatic beta cells. Travels in blood to every tissue in ${organism || 'your body'}.</p>
+                        <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #e65100;">⚠️ When It Fails:</strong> Type 1 diabetes: pancreas doesn't make insulin → blood glucose skyrockets. Type 2: cells ignore insulin → glucose can't enter cells. Both cause organ damage.
+                        </div>
+                    </div>
+                `;
+            }
+            // Hemoglobin - Oxygen Transporter
+            else if (nameStr.includes('hemoglobin') || nameStr.includes('globin')) {
+                html = `
+                    <h4 style="color: #1565c0; margin-bottom: 10px;">Oxygen Delivery System</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px;">
+                        <p style="color: #555; line-height: 1.7;"><strong>What it Does:</strong> Hemoglobin is the oxygen courier in blood:</p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.8; margin-top: 8px;">
+                            <li><strong>Picks up oxygen in lungs</strong> - Binds O₂ molecules (cooperatively - more O₂ bound = easier to bind more)</li>
+                            <li><strong>Releases oxygen in tissues</strong> - Drops O₂ exactly where cells need it most (muscles, brain, organs)</li>
+                            <li><strong>Cooperative binding</strong> - Unique ability: binding one O₂ makes it easier to bind others (the ${Math.round(analysis.secondary_structure.helix)}% α-helix structure enables this)</li>
+                            <li><strong>Buffers blood pH</strong> - Helps regulate acid-base balance</li>
+                            <li><strong>Returns CO₂ to lungs</strong> - Carries waste carbon dioxide back</li>
+                        </ul>
+                        <p style="color: #555; line-height: 1.7; margin-top: 10px;"><strong>Where it Works:</strong> Inside every red blood cell. Makes up 33% of all protein in ${organism || 'your body'}, totaling 270 million hemoglobin molecules per cell.</p>
+                        <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #e65100;">⚠️ When It Fails:</strong> Anemia: not enough hemoglobin → tissues starve for oxygen. Sickle cell: mutant hemoglobin polymerizes → cell sickling → pain & organ damage.
+                        </div>
+                    </div>
+                `;
+            }
+            // Antibodies - Immune
+            else if (keywordStr.includes('antibody') || keywordStr.includes('immunoglobulin')) {
+                html = `
+                    <h4 style="color: #1565c0; margin-bottom: 10px;">Immune Defense Guard</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px;">
+                        <p style="color: #555; line-height: 1.7;"><strong>What it Does:</strong> Antibodies are immune system proteins that protect you:</p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.8; margin-top: 8px;">
+                            <li><strong>Recognize invaders</strong> - Detect viruses, bacteria, toxins, cancer cells</li>
+                            <li><strong>Mark for destruction</strong> - Tag pathogens so immune cells can kill them</li>
+                            <li><strong>Neutralize toxins</strong> - Block poison molecules from harming cells</li>
+                            <li><strong>Prevent infection</strong> - Block viruses from entering cells</li>
+                            <li><strong>Activate complement</strong> - Trigger cascade of immune proteins</li>
+                            <li><strong>Personal molecular ID</strong> - Each person makes 100+ trillion unique antibodies (explains why you got measles immunity from vaccine)</li>
+                        </ul>
+                        <p style="color: #555; line-height: 1.7; margin-top: 10px;"><strong>Where it Works:</strong> Circulates in blood, lymph, and all body fluids. Produced by B cells in response to infections or vaccines.</p>
+                        <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #e65100;">⚠️ When It Fails:</strong> Immunodeficiency: not enough antibodies → infections spread unchecked. Autoimmunity: antibodies attack own body → lupus, rheumatoid arthritis.
+                        </div>
+                    </div>
+                `;
+            }
+            // Enzymes - Catalysts
+            else if (keywordStr.includes('enzyme') || keywordStr.includes('hydrolase') || keywordStr.includes('kinase')) {
+                html = `
+                    <h4 style="color: #1565c0; margin-bottom: 10px;">Metabolic Catalyst</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px;">
+                        <p style="color: #555; line-height: 1.7;"><strong>What it Does:</strong> Enzymes speed up chemical reactions in cells:</p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.8; margin-top: 8px;">
+                            <li><strong>Lower activation energy</strong> - Makes reactions happen 1 million times faster</li>
+                            <li><strong>Enable metabolism</strong> - Digestion, energy production, biosynthesis all depend on enzymes</li>
+                            <li><strong>Provide precision</strong> - Each enzyme does exactly one reaction with incredible specificity</li>
+                            <li><strong>Respond to signals</strong> - Turn on/off based on cell needs</li>
+                            <li><strong>Work in cycles</strong> - Catalyze reactions then regenerate unchanged to work again</li>
+                        </ul>
+                        <p style="color: #555; line-height: 1.7; margin-top: 10px;"><strong>Where it Works:</strong> Every organelle in ${organism || 'your cells'} - mitochondria, peroxisomes, cytoplasm, nucleus. Thousand+ different enzymes coordinately run your metabolism.</p>
+                        <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #e65100;">⚠️ When It Fails:</strong> Enzyme deficiencies → genetic diseases. Lactase deficiency = lactose intolerance. Phenylketonuria (PKU) = can't metabolize phenylalanine → brain damage if untreated.
+                        </div>
+                    </div>
+                `;
+            }
+            // Receptor - Signaling
+            else if (keywordStr.includes('receptor') || keywordStr.includes('gpcr')) {
+                html = `
+                    <h4 style="color: #1565c0; margin-bottom: 10px;">Cellular Communication Port</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px;">
+                        <p style="color: #555; line-height: 1.7;"><strong>What it Does:</strong> Receptors are cell surface antennas that receive signals:</p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.8; margin-top: 8px;">
+                            <li><strong>Detect signals</strong> - Bind hormones, neurotransmitters, growth factors</li>
+                            <li><strong>Transmit messages</strong> - Relay signals from outside to inside the cell</li>
+                            <li><strong>Trigger responses</strong> - Tell cell to grow, divide, die, change shape, etc.</li>
+                            <li><strong>Regulate behavior</strong> - Control mood (serotonin receptors), hunger (leptin), sleep (melatonin)</li>
+                            <li><strong>Enable tissue communication</strong> - Allow distant organs to coordinate</li>
+                        </ul>
+                        <p style="color: #555; line-height: 1.7; margin-top: 10px;"><strong>Where it Works:</strong> Cell surfaces throughout ${organism || 'your body'}. Every cell has hundreds of different receptors listening to different signals.</p>
+                        <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #e65100;">⚠️ When It Fails:</strong> Receptor mutations → hormone insensitivity. Androgen insensitivity = genetic males with female characteristics. Too many growth receptors = cancer cells keep dividing.
+                        </div>
+                    </div>
+                `;
+            }
+            // Structural proteins
+            else if (keywordStr.includes('structural') || keywordStr.includes('collagen') || keywordStr.includes('cytoskeleton')) {
+                html = `
+                    <h4 style="color: #1565c0; margin-bottom: 10px;">Structural Framework</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px;">
+                        <p style="color: #555; line-height: 1.7;"><strong>What it Does:</strong> Structural proteins form the architecture of cells and tissues:</p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.8; margin-top: 8px;">
+                            <li><strong>Provide mechanical strength</strong> - Bear loads and resist forces</li>
+                            <li><strong>Enable movement</strong> - Muscle contraction, cell migration, shape changes</li>
+                            <li><strong>Form barriers</strong> - Skin, blood vessels, organs hold their shape</li>
+                            <li><strong>Organize cell contents</strong> - Cytoskeleton arranges organelles</li>
+                            <li><strong>Connect tissues</strong> - Extracellular matrix holds organs together</li>
+                        </ul>
+                        <p style="color: #555; line-height: 1.7; margin-top: 10px;"><strong>Where it Works:</strong> Throughout ${organism || 'your body'}. Collagen alone makes up 30% of total body protein, 70% of skin, 90% of bone matrix.</p>
+                        <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #e65100;">⚠️ When It Fails:</strong> Collagen defects = brittle bones (osteogenesis imperfecta), weak skin. Actin/myosin defects = muscular dystrophy. Cytoskeleton collapse = cell death.
+                        </div>
+                    </div>
+                `;
+            }
+            // Default biological role
+            else {
+                html = `
+                    <h4 style="color: #1565c0; margin-bottom: 10px;">Cellular Role & Function</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px;">
+                        <p style="color: #555; line-height: 1.7;">This protein performs critical functions within ${organism || 'the organism'}:</p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.8; margin-top: 8px;">
+                            <li><strong>Molecular specificity</strong> - Designed to interact with specific molecules or cells</li>
+                            <li><strong>Spatial localization</strong> - Located in specific cells/organs where needed</li>
+                            <li><strong>Temporal regulation</strong> - Activated/deactivated based on body's needs</li>
+                            <li><strong>Integrated signaling</strong> - Communicates with other proteins and systems</li>
+                            <li><strong>Homeostatic balance</strong> - Maintains stable internal environment</li>
+                        </ul>
+                        <p style="color: #555; line-height: 1.7; margin-top: 10px;"><strong>Stability Consideration:</strong> This protein is ${analysis.stability.toLowerCase()} (instability index: ${analysis.instability_index}), meaning it maintains its function under physiological conditions with appropriate half-life for its biological role.</p>
+                        <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #e65100;">💡 Key Point:</strong> Protein function depends on structure. Even small mutations can completely disable it, leading to genetic diseases.
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+        
+        function generateRealWorldImpact(keywords, proteinFunction, proteinName, analysis) {
+            const keywordStr = keywords.join(' ').toLowerCase();
+            const functionStr = (proteinFunction || '').toLowerCase();
+            const nameStr = proteinName.toLowerCase();
+            let html = '';
+            
+            // Cancer/p53
+            if (nameStr.includes('p53') || nameStr.includes('tumor suppressor')) {
+                html = `
+                    <h4 style="color: #2e7d32; margin-bottom: 12px;">🎯 Cancer Treatment & Prevention</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>The Problem:</strong> 50% of all human cancers involve p53 mutations. Cancer cells grow uncontrollably because p53 can't stop them.
+                        </p>
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>How Structure Helps:</strong>
+                        </p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.7;">
+                            <li><strong>Drug Design:</strong> Scientists use the 3D structure to design molecules that restore p53 function, creating new cancer drugs</li>
+                            <li><strong>Mutation Analysis:</strong> Understanding which structural changes cause cancer helps predict patient outcomes</li>
+                            <li><strong>Gene Therapy:</strong> Structural knowledge guides delivery of working p53 genes to tumors</li>
+                            <li><strong>Clinical Impact:</strong> Drugs like APR-246 (now in trials) were designed using p53 structure to treat mutant p53 cancers</li>
+                        </ul>
+                        <div style="background: #e8f5e9; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #2e7d32;">💊 Real Example:</strong> 
+                            <span style="color: #555;">The structure revealed that many mutations destabilize p53 (instability index: ${analysis.instability_index}). This led to development of molecules that stabilize the protein, restoring its cancer-fighting ability in patients.</span>
+                        </div>
+                    </div>
+                `;
+            }
+            // Insulin
+            else if (nameStr.includes('insulin')) {
+                html = `
+                    <h4 style="color: #2e7d32; margin-bottom: 12px;">💉 Diabetes Treatment Revolution</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>The Problem:</strong> 537 million people have diabetes worldwide. They need insulin injections to survive, but traditional insulin acts too slowly or too long.
+                        </p>
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>How Structure Solves This:</strong>
+                        </p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.7;">
+                            <li><strong>Fast-Acting Insulin:</strong> Structure showed how insulin forms hexamers (6 molecules together). Scientists modified amino acids to prevent clustering, creating insulin that acts in 15 minutes instead of 30-60 minutes</li>
+                            <li><strong>Long-Lasting Insulin:</strong> By understanding the structure, engineers created insulin that slowly releases over 24 hours (Lantus/Toujeo), reducing injections from 4/day to 1/day</li>
+                            <li><strong>Stability:</strong> Your protein's instability index (${analysis.instability_index}) shows it's ${analysis.stability.toLowerCase()}. This property was used to design versions that don't need refrigeration for Africa/rural areas</li>
+                            <li><strong>Inhaled Insulin:</strong> Structural modifications enabled Afrezza, insulin you breathe instead of inject</li>
+                        </ul>
+                        <div style="background: #e8f5e9; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #2e7d32;">🌍 Real Impact:</strong> 
+                            <span style="color: #555;">Over 100 million people use engineered insulin variants designed from structural studies. This saves lives daily and improved quality of life for diabetics worldwide.</span>
+                        </div>
+                    </div>
+                `;
+            }
+            // Hemoglobin
+            else if (nameStr.includes('hemoglobin') || nameStr.includes('globin')) {
+                html = `
+                    <h4 style="color: #2e7d32; margin-bottom: 12px;">🩸 Blood Disorders & Oxygen Therapy</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>The Problem:</strong> Sickle cell disease affects 100,000 Americans and millions globally. A single amino acid change distorts hemoglobin, causing excruciating pain and organ damage.
+                        </p>
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>How Structure Solves This:</strong>
+                        </p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.7;">
+                            <li><strong>Sickle Cell Treatment:</strong> The 3D structure revealed exactly how mutant hemoglobin polymerizes into rigid fibers. This led to Voxelotor (Oxbryta), FDA-approved drug that prevents this polymerization by binding to hemoglobin's structure</li>
+                            <li><strong>Blood Substitutes:</strong> Understanding the oxygen-binding pocket (${Math.round(analysis.secondary_structure.helix)}% α-helix stabilizes it) helped design artificial oxygen carriers for trauma/surgery when blood isn't available</li>
+                            <li><strong>Gene Therapy:</strong> CRISPR-Cas9 therapy for sickle cell (now approved!) was designed using structural knowledge to correct the exact mutation</li>
+                            <li><strong>High-Altitude Medicine:</strong> Structure explains how hemoglobin adapts to altitude, guiding treatments for mountain sickness</li>
+                        </ul>
+                        <div style="background: #e8f5e9; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #2e7d32;">🏆 Real Success:</strong> 
+                            <span style="color: #555;">In 2023, the first patient was cured of sickle cell disease using CRISPR gene therapy based on hemoglobin structure. This once-fatal disease is now potentially curable.</span>
+                        </div>
+                    </div>
+                `;
+            }
+            // Enzymes
+            else if (keywordStr.includes('enzyme') || keywordStr.includes('hydrolase') || keywordStr.includes('catalytic')) {
+                html = `
+                    <h4 style="color: #2e7d32; margin-bottom: 12px;">🧪 Industrial & Environmental Solutions</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>The Problem:</strong> Chemical manufacturing creates toxic waste. Traditional processes require high heat, pressure, and polluting solvents.
+                        </p>
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>How Enzyme Structure Solves This:</strong>
+                        </p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.7;">
+                            <li><strong>Green Chemistry:</strong> By understanding the active site structure, enzymes replace toxic chemical reactions. Example: Enzymatic synthesis of antibiotics reduced waste by 90%</li>
+                            <li><strong>Plastic Degradation:</strong> PETase enzyme structure revealed how to break down plastic bottles. Modified versions now being deployed to tackle plastic pollution</li>
+                            <li><strong>Biofuel Production:</strong> Cellulase enzyme structures enabled efficient conversion of plant waste to biofuel, reducing fossil fuel dependence</li>
+                            <li><strong>Food Industry:</strong> Structural engineering created lactase for lactose-free milk (helps 65% of adults), meat tenderizers, and cheese production</li>
+                            <li><strong>Detergents:</strong> Protease structures led to cold-water laundry detergents, saving energy globally</li>
+                        </ul>
+                        <div style="background: #e8f5e9; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #2e7d32;">♻️ Environmental Impact:</strong> 
+                            <span style="color: #555;">A single plastic-eating enzyme plant can process 50,000 tons of PET plastic per year. This technology, based on enzyme structure studies, could eliminate millions of tons of plastic waste.</span>
+                        </div>
+                    </div>
+                `;
+            }
+            // Antibodies/Immune
+            else if (keywordStr.includes('antibody') || keywordStr.includes('immunoglobulin') || keywordStr.includes('immune')) {
+                html = `
+                    <h4 style="color: #2e7d32; margin-bottom: 12px;">💉 Antibody Therapeutics & Vaccines</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>The Problem:</strong> Traditional drugs can't target specific disease molecules precisely. Autoimmune diseases attack the body. Cancer cells evade the immune system.
+                        </p>
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>How Antibody Structures Solve This:</strong>
+                        </p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.7;">
+                            <li><strong>Cancer Immunotherapy:</strong> Structure revealed how to engineer antibodies that flag cancer cells for immune destruction. Herceptin (breast cancer), Keytruda (melanoma) - based on antibody structure</li>
+                            <li><strong>Autoimmune Treatment:</strong> Humira (rheumatoid arthritis) was designed using antibody structure to block inflammatory signals. It's the world's best-selling drug</li>
+                            <li><strong>COVID-19 Response:</strong> Spike protein structures enabled rapid development of monoclonal antibodies (Regeneron, Eli Lilly) and mRNA vaccines in record time</li>
+                            <li><strong>Allergy Treatment:</strong> Xolair for severe asthma/allergies - engineered from antibody structure to block allergic reactions</li>
+                            <li><strong>Stability Matters:</strong> Your protein's stability (${analysis.stability}, index: ${analysis.instability_index}) is crucial - antibodies must remain stable in bloodstream for weeks</li>
+                        </ul>
+                        <div style="background: #e8f5e9; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #2e7d32;">📊 Market Impact:</strong> 
+                            <span style="color: #555;">Antibody drugs generated $200+ billion in 2023. They've extended lives of cancer patients by years and transformed autoimmune disease from debilitating to manageable.</span>
+                        </div>
+                    </div>
+                `;
+            }
+            // Receptors/Signaling
+            else if (keywordStr.includes('receptor') || keywordStr.includes('signaling') || keywordStr.includes('gpcr')) {
+                html = `
+                    <h4 style="color: #2e7d32; margin-bottom: 12px;">💊 Drug Discovery & Precision Medicine</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>The Problem:</strong> Most diseases involve faulty cell signaling. Finding drugs that work without side effects is extremely difficult and expensive ($2.6 billion per drug).
+                        </p>
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>How Receptor Structures Revolutionize Drug Discovery:</strong>
+                        </p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.7;">
+                            <li><strong>Precision Drug Design:</strong> 3D structure shows exactly where drugs bind. Scientists design molecules that fit perfectly, like a key in a lock, reducing side effects</li>
+                            <li><strong>Pain Management:</strong> Opioid receptor structures led to new pain drugs with less addiction risk - a critical solution to the opioid crisis</li>
+                            <li><strong>Mental Health:</strong> Serotonin and dopamine receptor structures enabled better antidepressants (SSRIs) and schizophrenia treatments with fewer side effects</li>
+                            <li><strong>Heart Disease:</strong> Beta-blocker drugs (used by millions for heart disease/blood pressure) were optimized using receptor structures</li>
+                            <li><strong>AI + Structure:</strong> AlphaFold predicted structures now accelerate drug discovery from 10+ years to 2-3 years</li>
+                        </ul>
+                        <div style="background: #e8f5e9; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #2e7d32;">💰 Cost Savings:</strong> 
+                            <span style="color: #555;">Structure-based drug design cuts drug development costs by 40% and time by 50%. This means life-saving medicines reach patients faster and cheaper.</span>
+                        </div>
+                    </div>
+                `;
+            }
+            // Kinase
+            else if (keywordStr.includes('kinase') || nameStr.includes('kinase')) {
+                html = `
+                    <h4 style="color: #2e7d32; margin-bottom: 12px;">🎯 Targeted Cancer Therapy</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>The Problem:</strong> Traditional chemotherapy kills all fast-growing cells (cancer + healthy), causing severe side effects. 30% of cancers have overactive kinases driving growth.
+                        </p>
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>How Kinase Structures Enable Targeted Therapy:</strong>
+                        </p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.7;">
+                            <li><strong>Gleevec Revolution:</strong> BCR-ABL kinase structure led to Gleevec (imatinib), turning deadly leukemia into manageable chronic disease. 90% survival rate</li>
+                            <li><strong>Lung Cancer:</strong> EGFR kinase structures enabled Iressa/Tarceva - lung cancer drugs that work in weeks with minimal side effects vs. chemo</li>
+                            <li><strong>Melanoma:</strong> BRAF kinase structure led to Zelboraf, extending life expectancy for melanoma patients from months to years</li>
+                            <li><strong>Personalized Medicine:</strong> Tumor sequencing identifies which kinase is mutated, structure tells us which drug will work for that patient</li>
+                            <li><strong>Resistance Solutions:</strong> Structural studies reveal how cancers become drug-resistant, leading to next-generation inhibitors</li>
+                        </ul>
+                        <div style="background: #e8f5e9; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #2e7d32;">🏥 Patient Impact:</strong> 
+                            <span style="color: #555;">Over 70 FDA-approved kinase inhibitors now exist. Patients take a pill daily instead of toxic IV chemotherapy, with dramatically better outcomes and quality of life.</span>
+                        </div>
+                    </div>
+                `;
+            }
+            // Default for any protein
+            else {
+                html = `
+                    <h4 style="color: #2e7d32; margin-bottom: 12px;">🔬 Structure-Driven Solutions</h4>
+                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+                        <p style="color: #555; line-height: 1.7; margin-bottom: 10px;">
+                            <strong>Why Protein Structure Matters:</strong>
+                        </p>
+                        <ul style="color: #666; margin-left: 20px; line-height: 1.7;">
+                            <li><strong>Drug Discovery:</strong> 90% of drugs target proteins. Knowing the 3D structure shows where and how drugs can bind, dramatically speeding up development and reducing costs from billions to millions</li>
+                            <li><strong>Disease Understanding:</strong> Mutations change structure. By comparing normal vs. mutant structures, scientists understand what goes wrong in genetic diseases and can design corrections</li>
+                            <li><strong>Protein Engineering:</strong> Structure reveals which amino acids to modify to improve stability (yours: ${analysis.stability}, index ${analysis.instability_index}), activity, or create entirely new functions</li>
+                            <li><strong>Biotechnology:</strong> Industrial enzymes, biosensors, and biomaterials are designed by modifying protein structures for specific applications</li>
+                            <li><strong>Vaccine Development:</strong> Modern vaccines (COVID-19 mRNA vaccines) were designed using viral protein structures to train immune systems</li>
+                        </ul>
+                        <div style="background: #e8f5e9; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <strong style="color: #2e7d32;">📈 Overall Impact:</strong> 
+                            <span style="color: #555;">The global structural biology market is $8+ billion annually. Structure-based approaches have created over 200 FDA-approved drugs and countless industrial applications, fundamentally transforming medicine and biotechnology.</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+        
+        function initViewer(pdbData) {
+            const element = document.getElementById('viewer-content');
+            element.style.width = '100%';
+            element.style.height = '600px';
+            
+            const config = { backgroundColor: 'white' };
+            viewer = $3Dmol.createViewer(element, config);
+            
+            viewer.addModel(pdbData, 'pdb');
+            viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
+            viewer.zoomTo();
+            viewer.render();
+            
+            currentStyle = 'cartoon';
+            isSpinning = false;
+        }
+        
+        function resetView() {
+            if (viewer) {
+                viewer.zoomTo();
+                viewer.render();
+            }
+        }
+        
+        function toggleStyle() {
+            if (!viewer) return;
+            
+            viewer.setStyle({}, {});
+            
+            if (currentStyle === 'cartoon') {
+                viewer.setStyle({}, {stick: {colorscheme: 'chainHetatm'}});
+                currentStyle = 'stick';
+            } else if (currentStyle === 'stick') {
+                viewer.setStyle({}, {sphere: {colorscheme: 'chainHetatm', scale: 0.3}});
+                currentStyle = 'sphere';
+            } else {
+                viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
+                currentStyle = 'cartoon';
+            }
+            
+            viewer.render();
+        }
+        
+        function toggleSpin() {
+            if (!viewer) return;
+            
+            if (isSpinning) {
+                viewer.spin(false);
+                isSpinning = false;
+            } else {
+                viewer.spin(true);
+                isSpinning = true;
+            }
+        }
+    </script>
+</body>
+</html>
