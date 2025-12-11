@@ -448,29 +448,216 @@
         }
         
         .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            color: #b71c1c;
+            padding: 18px;
+            border-radius: 10px;
             margin: 20px 0;
+            border-left: 4px solid #d32f2f;
         }
         
         .no-structure {
             text-align: center;
-            padding: 60px 20px;
-            color: #666;
+            padding: 80px 30px;
+            color: #999;
         }
         
         .no-structure h3 {
-            color: #999;
-            margin-bottom: 10px;
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            font-weight: 700;
         }
 
         .progress-text {
-            margin-top: 10px;
-            font-size: 0.9rem;
+            margin-top: 15px;
+            font-size: 0.95rem;
             color: #888;
         }
+        
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+        
+        .tab-btn:hover {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.15);
+            border-color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #667eea;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #333;
+            line-height: 1;
+        }
+        
+        .stat-unit {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        /* Feature Highlights */
+        .highlights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .highlight-item {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 18px;
+            border-radius: 10px;
+            border-left: 4px solid #1976d2;
+        }
+        
+        .highlight-item h4 {
+            color: #1565c0;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        
+        .highlight-item p {
+            color: #555;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        /* Badges and Tags */
+        .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 4px 4px 4px 0;
+        }
+        
+        .badge.success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .badge.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        }
+        
+        .badge.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        }
+        
+        .badge.info {
+            background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+        }
+        
+        /* Section Dividers */
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            margin: 30px 0;
+        }
+        
+        /* Detailed Lists */
+        .detail-list {
+            list-style: none;
+        }
+        
+        .detail-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .detail-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-list li::before {
+            content: "✓";
+            color: #28a745;
+            font-weight: 700;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
     </style>
 </head>
 <body>
@@ -481,6 +668,7 @@
         </header>
         
         <div class="search-card">
+            <h2>🔍 Search Protein Database</h2>
             <form class="search-form" onsubmit="analyzeProtein(event)">
                 <div class="input-group">
                     <label for="uniprot-id">UniProt ID</label>
@@ -496,10 +684,10 @@
                 </button>
             </form>
             <div class="examples">
-                Try examples: 
-                <span onclick="loadExample('P69905')">P69905 (Hemoglobin)</span>
-                <span onclick="loadExample('P01308')">P01308 (Insulin)</span>
-                <span onclick="loadExample('P04637')">P04637 (p53)</span>
+                <span class="examples-label">📌 Try examples:</span>
+                <span class="example-btn" onclick="loadExample('P69905')">🔴 Hemoglobin (P69905)</span>
+                <span class="example-btn" onclick="loadExample('P01308')">💉 Insulin (P01308)</span>
+                <span class="example-btn" onclick="loadExample('P04637')">⚠️ p53 (P04637)</span>
             </div>
         </div>
         
@@ -1754,5 +1942,55 @@
             }
         }
     </script>
+    
+    <!-- Footer -->
+    <footer style="margin-top: 80px; padding: 60px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; border-radius: 20px 20px 0 0;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: 700;">🧬 Protein Structure Analyzer</h3>
+            <p style="opacity: 0.95; margin-bottom: 20px; line-height: 1.7;">
+                A comprehensive tool for analyzing protein sequences, structures, stability, and biological functions. 
+                Powered by UniProt, PDB, and advanced bioinformatics algorithms.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin: 40px 0;">
+                <div>
+                    <h4 style="margin-bottom: 10px; font-weight: 700;">📊 Features</h4>
+                    <ul style="list-style: none; text-align: left; display: inline-block;">
+                        <li>✓ 3D Structure Visualization</li>
+                        <li>✓ Stability Analysis (DIWV)</li>
+                        <li>✓ Sequence Alignment</li>
+                        <li>✓ Interaction Networks</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 10px; font-weight: 700;">🔬 Data Sources</h4>
+                    <ul style="list-style: none; text-align: left; display: inline-block;">
+                        <li>✓ UniProt Database</li>
+                        <li>✓ PDB Structures</li>
+                        <li>✓ RCSB Metadata</li>
+                        <li>✓ BioPython</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 10px; font-weight: 700;">🛠️ Technologies</h4>
+                    <ul style="list-style: none; text-align: left; display: inline-block;">
+                        <li>✓ HTML5 & CSS3</li>
+                        <li>✓ JavaScript ES6+</li>
+                        <li>✓ 3Dmol.js</li>
+                        <li>✓ Python Backend</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div style="border-top: 2px solid rgba(255,255,255,0.3); padding-top: 25px; margin-top: 40px;">
+                <p style="opacity: 0.8; margin-bottom: 10px;">
+                    📌 Built with ❤️ for Structural Biology Research
+                </p>
+                <p style="opacity: 0.75; font-size: 0.9rem;">
+                    © 2025 Protein Structure Analyzer | <a href="https://github.com/kiranmkHackHeroic/Protein-Structural-Analysis-and-Functional-Predicion" style="color: white; text-decoration: underline;">GitHub Repository</a>
+                </p>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
