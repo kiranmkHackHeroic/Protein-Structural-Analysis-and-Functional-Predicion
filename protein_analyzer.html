@@ -150,32 +150,74 @@
             text-align: center;
             margin-top: 25px;
             color: #666;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            align-items: center;
         }
         
         .examples-label {
             font-weight: 600;
             color: #333;
-            margin-right: 10px;
+            margin-right: 5px;
+            font-size: 0.95rem;
+        }
+        
+        .more-examples-section {
+            margin-top: 20px !important;
+        }
+        
+        .more-examples-section summary {
+            padding: 12px 15px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        
+        .more-examples-section summary:hover {
+            background: rgba(102, 126, 234, 0.08);
+            border-radius: 8px;
+        }
+        
+        .more-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            padding: 15px;
+            margin-top: 15px;
         }
         
         .example-btn {
             display: inline-block;
-            background: #e3f2fd;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
             color: #667eea;
-            padding: 8px 16px;
+            padding: 10px 18px;
             border-radius: 8px;
             cursor: pointer;
-            margin: 5px;
-            border: 1px solid #90caf9;
-            transition: all 0.3s;
+            margin: 6px 4px;
+            border: 2px solid #90caf9;
+            transition: all 0.3s ease;
             font-weight: 600;
             font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+            white-space: nowrap;
         }
         
         .example-btn:hover {
-            background: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .example-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
         }
         
         /* Status Messages */
@@ -763,10 +805,35 @@
                 </button>
             </form>
             <div class="examples">
-                <span class="examples-label">📌 Try examples:</span>
-                <span class="example-btn" onclick="loadExample('P69905')">🔴 Hemoglobin (P69905)</span>
-                <span class="example-btn" onclick="loadExample('P01308')">💉 Insulin (P01308)</span>
-                <span class="example-btn" onclick="loadExample('P04637')">⚠️ p53 (P04637)</span>
+                <span class="examples-label">📌 Quick Examples (Click to Load):</span>
+                <span class="example-btn" onclick="loadExample('P69905')">🔴 Hemoglobin</span>
+                <span class="example-btn" onclick="loadExample('P01308')">💉 Insulin</span>
+                <span class="example-btn" onclick="loadExample('P04637')">⚠️ p53</span>
+                <span class="example-btn" onclick="loadExample('P04626')">🎀 HER2</span>
+                <span class="example-btn" onclick="loadExample('P38398')">🧬 BRCA1</span>
+            </div>
+            
+            <details class="more-examples-section" style="margin-top: 20px; padding: 15px; background: rgba(102, 126, 234, 0.05); border-radius: 10px; border: 1px solid rgba(102, 126, 234, 0.2);">
+                <summary style="cursor: pointer; font-weight: 600; color: #667eea; font-size: 1rem;">🔬 More Proteins to Explore</summary>
+                <div class="examples more-examples" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+                    <div style="grid-column: 1 / -1;"><span class="examples-label" style="display: block; margin-bottom: 10px; font-size: 0.9rem; font-weight: 700; color: #667eea;">🔴 Cancer-Related:</span></div>
+                    <span class="example-btn" onclick="loadExample('P12931')">Src Kinase</span>
+                    <span class="example-btn" onclick="loadExample('P42212')">TNF-α</span>
+                    <span class="example-btn" onclick="loadExample('O75015')">p73</span>
+                    
+                    <div style="grid-column: 1 / -1;"><span class="examples-label" style="display: block; margin-bottom: 10px; margin-top: 10px; font-size: 0.9rem; font-weight: 700; color: #667eea;">🧬 Metabolic:</span></div>
+                    <span class="example-btn" onclick="loadExample('P02649')">ApoB-100</span>
+                    <span class="example-btn" onclick="loadExample('P35367')">PPARγ</span>
+                    
+                    <div style="grid-column: 1 / -1;"><span class="examples-label" style="display: block; margin-bottom: 10px; margin-top: 10px; font-size: 0.9rem; font-weight: 700; color: #667eea;">⚡ Antioxidant:</span></div>
+                    <span class="example-btn" onclick="loadExample('P51449')">SOD2</span>
+                    
+                    <div style="grid-column: 1 / -1;"><span class="examples-label" style="display: block; margin-bottom: 10px; margin-top: 10px; font-size: 0.9rem; font-weight: 700; color: #667eea;">🔗 Signaling & DNA:</span></div>
+                    <span class="example-btn" onclick="loadExample('P35556')">Delta-1</span>
+                    <span class="example-btn" onclick="loadExample('P31431')">RelA/p65</span>
+                    <span class="example-btn" onclick="loadExample('P63104')">Ubiquitin</span>
+                </div>
+            </details>
             </div>
         </div>
         
@@ -945,6 +1012,10 @@
         
         function loadExample(uniprotId) {
             document.getElementById('uniprot-id').value = uniprotId;
+            // Automatically submit the form
+            setTimeout(() => {
+                document.querySelector('.search-form').dispatchEvent(new Event('submit'));
+            }, 100);
         }
         
         function updateProgress(text) {
