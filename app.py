@@ -134,7 +134,7 @@ def fetch_pdb_structure(uniprot_id):
 
 @app.route('/')
 def index():
-    return send_from_directory('.', 'webapp.html')
+    return send_from_directory('.', 'protein_analyzer.html')
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze():
