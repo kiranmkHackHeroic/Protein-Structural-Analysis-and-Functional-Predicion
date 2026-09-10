@@ -303,28 +303,7 @@ Measures the relative frequency of aromatic residues (Phenylalanine $\text{Phe}$
 $$\text{Aromaticity} = \frac{N_{\text{Phe}} + N_{\text{Tyr}} + N_{\text{Trp}}}{L}$$
 
 Aromaticity is closely correlated with ultraviolet absorbance at $280\text{ nm}$ ($A_{280}$) and hydrophobic core stabilization.
-
----
-
-## 🎓 Demo & Presentation Guide
-
-For academic presentations, thesis defenses, or professor demonstrations, refer to the included cheat sheets:
-- **[DEMO_CHEAT_SHEET.txt](file:///Users/kiranmk/Downloads/Protein-Structural-Analysis-and-Functional-Predicion-main/DEMO_CHEAT_SHEET.txt)**: Minute-by-minute talking points.
-- **[DEMO_PREPARATION.md](file:///Users/kiranmk/Downloads/Protein-Structural-Analysis-and-Functional-Predicion-main/DEMO_PREPARATION.md)**: Rehearsal checklist and expected Q&A.
-
-### Recommended 3-Step Demo Progression:
-1. **Hemoglobin (`P69905`)**:
-   - Point to the DIWV index ($6.97 \rightarrow \text{Extremely Stable}$).
-   - Show how a single mutation ($\text{Glu6Val}$) distorts erythrocytes and affects 100M people.
-   - Show how structural biology guided **Voxelotor** to inhibit polymerization.
-2. **p53 (`P04637`)**:
-   - Explain the "Guardian of the Genome" role and its instability index ($73.59$).
-   - Discuss how p53 is mutated in $>50\%$ of human cancers.
-   - Highlight small-molecule refolding drug **APR-246**.
-3. **HER2 (`P04626`)** or **ACE2 (`Q9BYF1`)**:
-   - Demonstrate antibody-drug conjugates (**Enhertu**) or the Spike-binding interface of COVID-19.
-
----
+----
 
 ## 📚 Scientific References
 
