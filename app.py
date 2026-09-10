@@ -132,9 +132,29 @@ def fetch_pdb_structure(uniprot_id):
     except Exception as e:
         return None, f"Error fetching PDB: {str(e)}"
 
+# Load cached all_proteins_data if available
+ALL_PROTEINS_CACHE = {}
+cache_file = os.path.join(os.path.dirname(__file__), 'results', 'all_proteins_data.json')
+if os.path.exists(cache_file):
+    try:
+        import json
+        with open(cache_file, 'r') as f:
+            ALL_PROTEINS_CACHE = json.load(f)
+        print(f"Loaded {len(ALL_PROTEINS_CACHE)} proteins into backend cache.")
+    except Exception as e:
+        print(f"Warning: Could not load {cache_file}: {e}")
+
 @app.route('/')
 def index():
     return send_from_directory('.', 'protein_analyzer.html')
+
+@app.route('/api/proteins', methods=['GET'])
+def get_proteins():
+    """Return list and metadata for all pre-analyzed proteins"""
+    return jsonify({
+        'count': len(ALL_PROTEINS_CACHE),
+        'proteins': list(ALL_PROTEINS_CACHE.values())
+    })
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze():
@@ -146,11 +166,18 @@ def analyze():
         if not uniprot_id:
             return jsonify({'error': 'UniProt ID is required'}), 400
         
+        cached_info = ALL_PROTEINS_CACHE.get(uniprot_id)
+        
         # Fetch sequence
+        sequence = None
+        record = None
         try:
             sequence, record = fetch_sequence(uniprot_id)
         except Exception as e:
-            return jsonify({'error': f'Invalid UniProt ID or fetch failed: {str(e)}'}), 400
+            if cached_info and cached_info.get('sequence'):
+                sequence = cached_info['sequence']
+            else:
+                return jsonify({'error': f'Invalid UniProt ID or fetch failed: {str(e)}'}), 400
         
         # Analyze protein
         analysis_results = analyze_protein(str(sequence))
@@ -158,16 +185,25 @@ def analyze():
         # Fetch PDB structure
         pdb_content, pdb_info = fetch_pdb_structure(uniprot_id)
         
+        protein_name = record.entry_name if record and hasattr(record, 'entry_name') else (cached_info.get('name') if cached_info else 'Unknown')
+        description = record.description if record and hasattr(record, 'description') else (cached_info.get('name') if cached_info else 'No description')
+        organism = record.organism if record and hasattr(record, 'organism') else (cached_info.get('organism') if cached_info else 'Unknown')
+        
         response = {
             'uniprot_id': uniprot_id,
-            'protein_name': record.entry_name if record and hasattr(record, 'entry_name') else 'Unknown',
-            'description': record.description if record and hasattr(record, 'description') else 'No description',
-            'organism': record.organism if record and hasattr(record, 'organism') else 'Unknown',
+            'protein_name': protein_name,
+            'description': description,
+            'organism': organism,
             'sequence': str(sequence),
             'analysis': analysis_results,
             'pdb_structure': pdb_content,
-            'pdb_id': pdb_info if pdb_content else None,
-            'pdb_error': pdb_info if not pdb_content else None
+            'pdb_id': pdb_info if pdb_content else (cached_info.get('pdb_id') if cached_info else None),
+            'pdb_error': pdb_info if not pdb_content else None,
+            'diseases': cached_info.get('diseases', []) if cached_info else [],
+            'interactions': cached_info.get('interactions', []) if cached_info else [],
+            'orthologs': cached_info.get('orthologs', []) if cached_info else [],
+            'biological_role': cached_info.get('biological_role') if cached_info else None,
+            'real_world_impact': cached_info.get('real_world_impact') if cached_info else None
         }
         
         return jsonify(response)
@@ -177,3 +213,4 @@ def analyze():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8080)
+

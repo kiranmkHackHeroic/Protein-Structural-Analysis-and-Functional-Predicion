@@ -1,13 +1,13 @@
 {
-  "uniprot_id": "P69905",
-  "sequence_length": 142,
-  "molecular_weight": 15257.359100000001,
-  "isoelectric_point": 8.716915321350097,
-  "aromaticity": 0.07746478873239436,
-  "instability_index": 6.973943661971832,
+  "uniprot_id": "P04626",
+  "sequence_length": 1255,
+  "molecular_weight": 137909.068,
+  "isoelectric_point": 5.584965324401855,
+  "aromaticity": 0.06772908366533865,
+  "instability_index": 56.13443027888477,
   "secondary_structure": {
-    "helix": 0.4014084507042254,
-    "sheet": 0.2605633802816901,
-    "turn": 0.35915492957746475
+    "helix": 0.2868525896414343,
+    "sheet": 0.3099601593625498,
+    "turn": 0.3322709163346614
   }
 }

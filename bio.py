@@ -10,9 +10,12 @@ import io
 import urllib.error
 import ssl
 import json
+import sys
 
 # ----- SETUP -----
-uniprot_id = "P69905"   # Hemoglobin alpha
+# Supports: python3 bio.py [UNIPROT_ID] or python3 bio.py --all
+uniprot_id = sys.argv[1].upper() if len(sys.argv) > 1 and not sys.argv[1].startswith("--") else "P69905"
+print(f"Target UniProt ID: {uniprot_id}")
 print("Fetching sequence from UniProt...")
 
 # ----- SEQUENCE RETRIEVAL -----
