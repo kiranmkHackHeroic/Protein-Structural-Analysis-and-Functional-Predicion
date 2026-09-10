@@ -17,7 +17,7 @@ A state-of-the-art computational biology platform integrating real-time UniProt 
 - [REST API Endpoints](#-rest-api-endpoints)
 - [The 24 Curated Master Proteins](#-the-24-curated-master-proteins)
 - [Scientific Algorithms & Methodology](#-scientific-algorithms--methodology)
-- [Demo & Presentation Guide](#-demo--presentation-guide)
+- [Recommended Presentation Flow](#-recommended-presentation-flow)
 - [Scientific References](#-scientific-references)
 - [License](#-license)
 
@@ -96,8 +96,6 @@ Protein-Structural-Analysis-and-Functional-Predicion-main/
 ├── bio.py                      # Standalone CLI protein analysis script
 ├── protein_analyzer.html       # Full single-page interactive dashboard with 3Dmol.js
 ├── README.md                   # Comprehensive documentation & reference guide
-├── DEMO_CHEAT_SHEET.txt        # Word-for-word presentation script and timing guide
-├── DEMO_PREPARATION.md         # Demonstration rehearsal, Q&A, and contingency guide
 ├── FINAL_CHECKLIST.txt         # Pre-demo verification and feature checklist
 ├── LICENSE                     # MIT Open Source License
 └── results/
@@ -303,7 +301,8 @@ Measures the relative frequency of aromatic residues (Phenylalanine $\text{Phe}$
 $$\text{Aromaticity} = \frac{N_{\text{Phe}} + N_{\text{Tyr}} + N_{\text{Trp}}}{L}$$
 
 Aromaticity is closely correlated with ultraviolet absorbance at $280\text{ nm}$ ($A_{280}$) and hydrophobic core stabilization.
-----
+
+---
 
 ## 📚 Scientific References
 
