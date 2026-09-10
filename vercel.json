@@ -2,7 +2,21 @@
   "version": 2,
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/protein_analyzer", "destination": "/protein_analyzer.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/protein_analyzer.html",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/protein_analyzer",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
