@@ -94,9 +94,11 @@ Traditional bioinformatics workflows require researchers to manually navigate be
 Protein-Structural-Analysis-and-Functional-Predicion-main/
 ├── app.py                      # Flask backend API server & static file host
 ├── bio.py                      # Standalone CLI protein analysis script
+├── index.html                  # Root landing page for GitHub Pages / Vercel
 ├── protein_analyzer.html       # Full single-page interactive dashboard with 3Dmol.js
+├── requirements.txt            # Python dependencies for cloud deployment
+├── Procfile                    # Production web process config (gunicorn)
 ├── README.md                   # Comprehensive documentation & reference guide
-├── FINAL_CHECKLIST.txt         # Pre-demo verification and feature checklist
 ├── LICENSE                     # MIT Open Source License
 └── results/
     ├── all_proteins_data.json  # Complete 24-protein pre-computed master dataset
