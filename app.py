@@ -145,9 +145,20 @@ if os.path.exists(cache_file):
         print(f"Warning: Could not load {cache_file}: {e}")
 
 @app.route('/')
+@app.route('/index.html')
+@app.route('/protein_analyzer')
+@app.route('/protein_analyzer.html')
 def index():
     filename = 'index.html' if os.path.exists('index.html') else 'protein_analyzer.html'
     return send_from_directory('.', filename)
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    if os.path.exists(filename):
+        return send_from_directory('.', filename)
+    # Fallback to index.html for SPA routing
+    default_page = 'index.html' if os.path.exists('index.html') else 'protein_analyzer.html'
+    return send_from_directory('.', default_page)
 
 @app.route('/api/proteins', methods=['GET'])
 def get_proteins():
