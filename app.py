@@ -146,7 +146,8 @@ if os.path.exists(cache_file):
 
 @app.route('/')
 def index():
-    return send_from_directory('.', 'protein_analyzer.html')
+    filename = 'index.html' if os.path.exists('index.html') else 'protein_analyzer.html'
+    return send_from_directory('.', filename)
 
 @app.route('/api/proteins', methods=['GET'])
 def get_proteins():
@@ -212,5 +213,6 @@ def analyze():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(debug=False, host='0.0.0.0', port=port)
 
